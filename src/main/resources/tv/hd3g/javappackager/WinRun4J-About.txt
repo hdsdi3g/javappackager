@@ -1,0 +1,4 @@
+License: Common Public License - v 1.0 (https://www.eclipse.org/legal/cpl-v10.html)
+Version: 0.4.5
+Get from: https://github.com/poidasmith/winrun4j/releases
+
