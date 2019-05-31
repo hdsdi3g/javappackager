@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -72,11 +71,10 @@ public class AppToPackage {
 	private static final String destinationDirName = "javappackager";
 
 	private final File mvnDir;
-	private final Predicate<File> isIgnored;
+	private final GitInfo gitInfo;
 	private final File pomFile;
 	private final File targetDir;
 
-	// private final String appPackageName;
 	private final Model pom;
 	private final String appVersion;
 	private final String appName;
@@ -84,9 +82,9 @@ public class AppToPackage {
 
 	private final MavenCli mavenCli;
 
-	public AppToPackage(final File mvnDir, final Predicate<File> isIgnored) throws IOException, ModelBuildingException {
+	public AppToPackage(final File mvnDir, final GitInfo gitInfo) throws IOException, ModelBuildingException {
 		this.mvnDir = Objects.requireNonNull(mvnDir, "\"mvnDir\" can't to be null");
-		this.isIgnored = Objects.requireNonNull(isIgnored, "\"isIgnored\" can't to be null");
+		this.gitInfo = Objects.requireNonNull(gitInfo, "\"gitInfo\" can't to be null");
 
 		if (mvnDir.exists() == false) {
 			throw new FileNotFoundException("Can't found dir " + mvnDir);
@@ -181,9 +179,6 @@ public class AppToPackage {
 		final ModelBuildingRequest req = new DefaultModelBuildingRequest();
 		req.setProcessPlugins(false);
 		req.setPomFile(pomFile);
-		// req.setProfiles(Collections.emptyList());
-		// req.setModelResolver()
-		// req.setModelResolver( new RepositoryModelResolver( basedir, pathTranslator ) );
 		req.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
 
 		pom = builder.build(req).getEffectiveModel();
@@ -191,11 +186,10 @@ public class AppToPackage {
 		if ("jar".equalsIgnoreCase(pom.getPackaging()) == false) {
 			throw new IOException("This pom is package as \"" + pom.getPackaging() + "\", only \"jar\" is managed");
 		}
-		// appPackageName = model.getGroupId() + "." + model.getArtifactId();
 		appVersion = pom.getVersion();
 		appName = pom.getName();
 
-		log.info("Operate on " + appName + "-" + appVersion);
+		log.info("Operate on " + appName + "-" + appVersion + " / git " + gitInfo.getVersion());
 
 		appProperties = pom.getProperties();
 
@@ -229,6 +223,10 @@ public class AppToPackage {
 		return Optional.empty();
 	}
 
+	public String getAppName() {
+		return appName;
+	}
+
 	public Optional<File> getMainResourceDir() {
 		return optionalFileExists(Path.of(mvnDir.getPath(), "src", "main", "resources").toFile());
 	}
@@ -241,21 +239,15 @@ public class AppToPackage {
 		return mvnDir;
 	}
 
-	private void doMaven(final String... verbs) throws IOException {
+	private void doMaven(final String verb) throws IOException {
 		System.setProperty("maven.multiModuleProjectDirectory", mvnDir.getPath());
 
-		final List<String> cmdLine = Stream.concat(Stream.of("-Dmaven.test.skip=true"), Stream.of(verbs)).collect(Collectors.toList());
-
-		final int result = mavenCli.doMain(cmdLine.toArray(new String[cmdLine.size()]), mvnDir.getPath(), System.out, System.err);
+		final int result = mavenCli.doMain(new String[] { "-Dmaven.test.skip=true", verb }, mvnDir.getPath(), System.out, System.err);
 		if (result != 0) {
 			System.err.println();
-			throw new IOException("Failed maven execution " + cmdLine.stream().collect(Collectors.joining(" ")));
+			throw new IOException("Failed maven execution \"-Dmaven.test.skip=true " + verb);
 		}
 	}
-
-	/*public void mavenClean() throws IOException {
-		doMaven("clean");
-	}*/
 
 	public List<File> mavenCopyDependencies() throws IOException {
 		doMaven("dependency:copy-dependencies");
@@ -343,7 +335,7 @@ public class AppToPackage {
 
 					final String itemPath = item.getAbsolutePath();
 					final String copyDestDirPath = copyDestDir.getAbsolutePath();
-					Files.walk(item.toPath()).filter(Files::isRegularFile).map(Path::toFile).filter(isIgnored.negate()).forEach(o -> {
+					Files.walk(item.toPath()).filter(Files::isRegularFile).map(Path::toFile).filter(gitInfo.negate()).forEach(o -> {
 						final String relativePath = FilenameUtils.normalizeNoEndSeparator(o.getAbsolutePath().substring(itemPath.length()));
 						final File destFile = new File(copyDestDirPath + File.separator + relativePath);
 
@@ -355,7 +347,7 @@ public class AppToPackage {
 						}
 					});
 				} else {
-					if (isIgnored.test(item)) {
+					if (gitInfo.test(item)) {
 						log.debug("Ignore copy file \"{}\"", item);
 						return;
 					}
@@ -388,7 +380,7 @@ public class AppToPackage {
 		}
 
 		public void makeAppLicenseFile() throws IOException {
-			final Path licenseFile = Path.of(destDir.getPath(), licenseDir, appName + ".txt");
+			final Path licenseFile = Path.of(destDir.getPath(), licenseDir, appName.toUpperCase() + ".TXT");
 			final PrintStream out = new PrintStream(licenseFile.toFile());
 
 			out.print(appName);
@@ -443,6 +435,14 @@ public class AppToPackage {
 				out.println();
 			});
 
+			out.close();
+		}
+
+		public void makeVersionFile() throws IOException {
+			final Path versionFile = Path.of(destDir.getPath(), "VERSION.TXT");
+			final PrintStream out = new PrintStream(versionFile.toFile());
+			out.println(appVersion);
+			out.println(gitInfo.getVersion());
 			out.close();
 		}
 

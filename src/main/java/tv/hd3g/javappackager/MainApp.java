@@ -39,7 +39,8 @@ public class MainApp {
 		final DefaultParser parser = new DefaultParser();
 		final Options options = new Options();
 		options.addRequiredOption("d", "root-dir", true, "App root directory (with pom file)");
-		options.addOption("j", "copy-jvm", false, "Copy this current JVM (" + System.getenv("JAVA_HOME") + ") to new package");
+		// options.addOption("j", "copy-jvm", false, "Copy this current JVM (" + System.getenv("JAVA_HOME") + ") to new package");
+		// TODO solution for logging (maybe to windows logs ?)
 
 		CommandLine cmd = null;
 		try {
@@ -51,22 +52,15 @@ public class MainApp {
 			System.exit(1);
 		}
 
-		// TODO add version somewere + git last commit
-
 		final File rootDir = new File(cmd.getOptionValue("d"));
-		final boolean copyJVM = cmd.hasOption("j");
+		final boolean copyJVM = true; // cmd.hasOption("j");
 
-		final GitIgnored gitState = new GitIgnored(rootDir);
-		final AppToPackage app = new AppToPackage(rootDir, gitState);
+		final GitInfo gitInfo = new GitInfo(rootDir);
+		final AppToPackage app = new AppToPackage(rootDir, gitInfo);
 
 		final ExecutableFinder execFinder = new ExecutableFinder();
 		app.getMainConfigDir().ifPresent(execFinder::addPath);
 		app.getMainResourceDir().ifPresent(execFinder::addPath);
-
-		/*final List<File> localDirs = Stream.of("bin", "config").map(relativeDir -> {
-			return Path.of(app.getMvnDir().getPath(), relativeDir);
-		}).map(Path::toFile).filter(File::exists).filter(File::isDirectory).collect(Collectors.toUnmodifiableList());
-		localDirs.forEach(execFinder::addPath);*/
 
 		final Destination dest = app.getDestination();
 		log.info("Get and move main jar to lib dir");
@@ -91,13 +85,11 @@ public class MainApp {
 			dest.copyToDest(dir, "config");
 		});
 
-		final WinRun4J wrj = new WinRun4J(execFinder);
+		final WinRun4J wrj = new WinRun4J(execFinder, app.getAppName());
 
 		wrj.setClassPath(Arrays.asList("lib/*.jar", "lib", "bin", "config"));
 		wrj.setMainClass(app.getMainClass());
 		wrj.setMinVMVersion(app.getJVMVersion());
-		// wrj.setSingleInstance(singleInstance)
-		// wrj.getAppParameters();
 
 		if (copyJVM) {
 			final File javaHome = new File(System.getenv("JAVA_HOME"));
@@ -122,6 +114,7 @@ public class MainApp {
 
 		wrj.copyLicenseTo(dest.getTargetLicensesDir());
 		dest.makeAppLicenseFile();
+		dest.makeVersionFile();
 
 		log.info("You can found package here: " + dest.getDir().getPath());
 	}

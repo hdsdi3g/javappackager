@@ -25,26 +25,28 @@ import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 
-public class GitIgnored implements Predicate<File> {
+public class GitInfo implements Predicate<File> {
 	private static Logger log = LogManager.getLogger();
 
 	private final Set<File> ignored;
+	private final String version;
 
-	public GitIgnored(final File rootDir) throws IOException {
+	public GitInfo(final File rootDir) throws IOException {
 		final Git git = Git.open(rootDir);
-		final Repository db = git.getRepository();
+		final Repository repository = git.getRepository();
 
 		/**
 		 * See from https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit.test/tst/org/eclipse/jgit/ignore/CGitIgnoreTest.java
 		 */
 		ignored = new HashSet<>();
-		try (TreeWalk walk = new TreeWalk(db)) {
-			final FileTreeIterator iter = new FileTreeIterator(db);
+		try (TreeWalk walk = new TreeWalk(repository)) {
+			final FileTreeIterator iter = new FileTreeIterator(repository);
 			iter.setWalkIgnoredDirectories(true);
 			walk.addTree(iter);
 			walk.setRecursive(true);
@@ -56,6 +58,8 @@ public class GitIgnored implements Predicate<File> {
 				}
 			}
 		}
+
+		version = repository.getBranch() + " " + repository.getRefDatabase().exactRef(Constants.HEAD).getObjectId().abbreviate(8).name();
 	}
 
 	@Override
@@ -63,4 +67,7 @@ public class GitIgnored implements Predicate<File> {
 		return ignored.contains(f);
 	}
 
+	public String getVersion() {
+		return version;
+	}
 }

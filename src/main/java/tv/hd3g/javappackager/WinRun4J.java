@@ -36,7 +36,6 @@ import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 import tv.hd3g.processlauncher.cmdline.Parameters;
 
 public class WinRun4J {
-	// private static Logger log = LogManager.getLogger();
 
 	private static final String winRun4jExecName = "WinRun4J64";
 	private static final String rceditExecName = "RCEDIT64";
@@ -55,7 +54,7 @@ public class WinRun4J {
 	private boolean singleInstance;
 	private String jvmDir;
 
-	public WinRun4J(final ExecutableFinder executableFinder) throws IOException {
+	public WinRun4J(final ExecutableFinder executableFinder, final String appName) throws IOException {
 		this.executableFinder = Objects.requireNonNull(executableFinder, "\"executableFinder\" can't to be null");
 
 		winRun4jExec = getExecFile(executableFinder, winRun4jExecName, getClass());
@@ -65,10 +64,10 @@ public class WinRun4J {
 		appParameters = new Parameters();
 
 		iniContent.put("ini.override", "true");
-		iniContent.put("log", "log\\app.log");
-		iniContent.put("log.level", "info");// TODO set warning
+		iniContent.put("log", "%LOCALAPPDATA%\\" + appName + "\\startup.log");
+		iniContent.put("log.level", "warning");
 		iniContent.put("log.roll.size", "2");
-		iniContent.put("vm.sysfirst", "true");
+		// iniContent.put("vm.sysfirst", "true");
 	}
 
 	private static File getExecFile(final ExecutableFinder executableFinder, final String baseName, final Class<?> ressourceFromClass) throws IOException {
@@ -138,6 +137,7 @@ public class WinRun4J {
 		} else {
 			iniContent.remove("single.instance");
 		}
+
 		if (jvmDir != null) {
 			iniContent.putIfAbsent("vm.location", jvmDir + "/bin/server/jvm.dll");
 		}
