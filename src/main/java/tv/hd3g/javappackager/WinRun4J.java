@@ -54,7 +54,7 @@ public class WinRun4J {
 	private boolean singleInstance;
 	private String jvmDir;
 
-	public WinRun4J(final ExecutableFinder executableFinder, final String appName) throws IOException {
+	public WinRun4J(final ExecutableFinder executableFinder, final String appName, final String appVersion, final String gitVersion) throws IOException {
 		this.executableFinder = Objects.requireNonNull(executableFinder, "\"executableFinder\" can't to be null");
 
 		winRun4jExec = getExecFile(executableFinder, winRun4jExecName, getClass());
@@ -67,6 +67,9 @@ public class WinRun4J {
 		iniContent.put("log", "%LOCALAPPDATA%\\" + appName + "\\startup.log");
 		iniContent.put("log.level", "warning");
 		iniContent.put("log.roll.size", "2");
+		iniContent.put("vmarg.1", "-Djavappackager.appname=\"" + appName + "\"");
+		iniContent.put("vmarg.2", "-Djavappackager.appversion=\"" + appVersion + "\"");
+		iniContent.put("vmarg.3", "-Djavappackager.gitversion=\"" + gitVersion + "\"");
 		// iniContent.put("vm.sysfirst", "true");
 	}
 

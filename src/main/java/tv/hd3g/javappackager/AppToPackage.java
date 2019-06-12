@@ -77,6 +77,7 @@ public class AppToPackage {
 
 	private final Model pom;
 	private final String appVersion;
+	private final String gitVersion;
 	private final String appName;
 	private final Properties appProperties;
 
@@ -187,9 +188,10 @@ public class AppToPackage {
 			throw new IOException("This pom is package as \"" + pom.getPackaging() + "\", only \"jar\" is managed");
 		}
 		appVersion = pom.getVersion();
+		gitVersion = gitInfo.getVersion();
 		appName = pom.getName();
 
-		log.info("Operate on " + appName + "-" + appVersion + " / git " + gitInfo.getVersion());
+		log.info("Operate on " + appName + "-" + appVersion + " / git " + gitVersion);
 
 		appProperties = pom.getProperties();
 
@@ -442,7 +444,7 @@ public class AppToPackage {
 			final Path versionFile = Path.of(destDir.getPath(), "VERSION.TXT");
 			final PrintStream out = new PrintStream(versionFile.toFile());
 			out.println(appVersion);
-			out.println(gitInfo.getVersion());
+			out.println(gitVersion);
 			out.close();
 		}
 
@@ -451,4 +453,11 @@ public class AppToPackage {
 		}
 	}
 
+	public String getAppVersion() {
+		return appVersion;
+	}
+
+	public String getGitVersion() {
+		return gitVersion;
+	}
 }

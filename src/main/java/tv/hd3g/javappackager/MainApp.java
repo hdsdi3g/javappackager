@@ -47,7 +47,7 @@ public class MainApp {
 			cmd = parser.parse(options, args);
 		} catch (final ParseException e) {
 			final HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp("javappackager -d <root directory> [-j]", "Package simple java/mvn app for Windows statup", options, "");
+			formatter.printHelp("javappackager -d <root directory>", "Package simple java/mvn app for Windows statup", options, "");// [-j]
 			System.err.println(e.getMessage());
 			System.exit(1);
 		}
@@ -85,7 +85,7 @@ public class MainApp {
 			dest.copyToDest(dir, "config");
 		});
 
-		final WinRun4J wrj = new WinRun4J(execFinder, app.getAppName());
+		final WinRun4J wrj = new WinRun4J(execFinder, app.getAppName(), app.getAppVersion(), app.getGitVersion());
 
 		wrj.setClassPath(Arrays.asList("lib/*.jar", "lib", "bin", "config"));
 		wrj.setMainClass(app.getMainClass());
