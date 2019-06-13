@@ -85,7 +85,7 @@ public class MainApp {
 			dest.copyToDest(dir, "config");
 		});
 
-		final WinRun4J wrj = new WinRun4J(execFinder, app.getAppName(), app.getAppVersion(), app.getGitVersion());
+		final WinRun4J wrj = new WinRun4J(execFinder, app.getAppName(), app.getAppVersion(), app.getGitVersion(), app.getAppUrl());
 
 		wrj.setClassPath(Arrays.asList("lib/*.jar", "lib", "bin", "config"));
 		wrj.setMainClass(app.getMainClass());

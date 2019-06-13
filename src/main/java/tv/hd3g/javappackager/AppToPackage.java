@@ -79,6 +79,7 @@ public class AppToPackage {
 	private final String appVersion;
 	private final String gitVersion;
 	private final String appName;
+	private final String appUrl;
 	private final Properties appProperties;
 
 	private final MavenCli mavenCli;
@@ -190,10 +191,15 @@ public class AppToPackage {
 		appVersion = pom.getVersion();
 		gitVersion = gitInfo.getVersion();
 		appName = pom.getName();
+		appUrl = pom.getUrl();
 
 		log.info("Operate on " + appName + "-" + appVersion + " / git " + gitVersion);
 
 		appProperties = pom.getProperties();
+
+		if (appProperties.getProperty("javappackager.mainclass") == null) {
+			throw new RuntimeException("You must provide in pom file at least properties > javappackager.mainclass");
+		}
 
 		final ClassWorld world = new ClassWorld("default", Thread.currentThread().getContextClassLoader());
 		mavenCli = new MavenCli(world);
@@ -459,5 +465,9 @@ public class AppToPackage {
 
 	public String getGitVersion() {
 		return gitVersion;
+	}
+
+	public String getAppUrl() {
+		return appUrl;
 	}
 }

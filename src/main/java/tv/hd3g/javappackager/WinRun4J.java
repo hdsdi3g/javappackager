@@ -54,7 +54,7 @@ public class WinRun4J {
 	private boolean singleInstance;
 	private String jvmDir;
 
-	public WinRun4J(final ExecutableFinder executableFinder, final String appName, final String appVersion, final String gitVersion) throws IOException {
+	public WinRun4J(final ExecutableFinder executableFinder, final String appName, final String appVersion, final String gitVersion, final String appUrl) throws IOException {
 		this.executableFinder = Objects.requireNonNull(executableFinder, "\"executableFinder\" can't to be null");
 
 		winRun4jExec = getExecFile(executableFinder, winRun4jExecName, getClass());
@@ -67,9 +67,19 @@ public class WinRun4J {
 		iniContent.put("log", "%LOCALAPPDATA%\\" + appName + "\\startup.log");
 		iniContent.put("log.level", "warning");
 		iniContent.put("log.roll.size", "2");
-		iniContent.put("vmarg.1", "-Djavappackager.appname=\"" + appName + "\"");
-		iniContent.put("vmarg.2", "-Djavappackager.appversion=\"" + appVersion + "\"");
-		iniContent.put("vmarg.3", "-Djavappackager.gitversion=\"" + gitVersion + "\"");
+
+		Optional.ofNullable(appName).ifPresent(s -> {
+			iniContent.put("vmarg.1", "-Djavappackager.appname=" + s);
+		});
+		Optional.ofNullable(appVersion).ifPresent(s -> {
+			iniContent.put("vmarg.2", "-Djavappackager.appversion=" + s);
+		});
+		Optional.ofNullable(gitVersion).ifPresent(s -> {
+			iniContent.put("vmarg.3", "-Djavappackager.gitversion=" + s);
+		});
+		Optional.ofNullable(appUrl).ifPresent(s -> {
+			iniContent.put("vmarg.4", "-Djavappackager.url=" + s);
+		});
 		// iniContent.put("vm.sysfirst", "true");
 	}
 
@@ -86,7 +96,7 @@ public class WinRun4J {
 	}
 
 	public WinRun4J setMainClass(final String mainClass) {
-		this.mainClass = mainClass;
+		this.mainClass = Objects.requireNonNull(mainClass, "\"mainClass\" can't to be null");
 		return this;
 	}
 
